@@ -1,5 +1,7 @@
 package com.enderboy9217.werewolves.mixin;
 
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
@@ -20,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -33,6 +36,44 @@ public class WerewolfMixin {
 
 	@Unique
 	private boolean isFullMoon = false;
+
+	@Unique
+	private void playHowl(MinecraftServer server, ServerWorld world) {
+		Predicate<WolfEntity> isUntamed = wolf -> !wolf.isTamed();
+		List<WolfEntity> wolves = new ArrayList<>();
+
+		for (Entity entity : world.iterateEntities()) {
+			if (entity instanceof WolfEntity wolf && ( !wolf.isTamed() )) {
+				wolves.add(wolf);
+			}
+		}
+
+		Identifier soundIdentifier = new Identifier(MOD_ID, "wolf_howl");
+		RegistryEntry<SoundEvent> soundEntry = Registries.SOUND_EVENT.getEntry(Registries.SOUND_EVENT.get(soundIdentifier));
+
+		for (WolfEntity wolf : wolves) {
+			double x = wolf.getX();
+			double y = wolf.getY();
+			double z = wolf.getZ();
+			LOGGER.info("Playing howl");
+
+			for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+				// Only play sound for players within 256 blocks
+				if (player.squaredDistanceTo(wolf) < 256 * 256) {
+					float pitch = 0.8f + (world.getRandom().nextFloat() * 0.2f); // Between 0.8 and 1.0
+					PlaySoundS2CPacket packet = new PlaySoundS2CPacket(
+							soundEntry,
+							SoundCategory.NEUTRAL,
+							x, y, z,
+							3.0f, pitch,
+							server.getOverworld().getRandom().nextLong()
+					);
+
+					player.networkHandler.sendPacket(packet);
+				}
+			}
+		}
+	}
 
 	@Inject(method = "tickWorlds", at = @At("HEAD"))
 	private void onNightTick(CallbackInfo info) {
@@ -48,24 +89,7 @@ public class WerewolfMixin {
 						alreadyCheckedTonight = true;
 
 						// Play Howl Sound
-						Identifier soundIdentifier = new Identifier(MOD_ID, "wolf_howl");
-						RegistryEntry<SoundEvent> soundEntry = Registries.SOUND_EVENT.getEntry(Registries.SOUND_EVENT.get(soundIdentifier));
-
-						for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-							double x = player.getX();
-							double y = player.getY();
-							double z = player.getZ();
-
-							PlaySoundS2CPacket packet = new PlaySoundS2CPacket(
-									soundEntry,
-									SoundCategory.AMBIENT,
-									x, y, z,
-									1.0f, 1.0f,
-									server.getOverworld().getRandom().nextLong() // seed for randomness
-							);
-
-							player.networkHandler.sendPacket(packet);
-						}
+						playHowl(server, world);
 					}
 					alreadyCheckedTonight = true;
 				}
