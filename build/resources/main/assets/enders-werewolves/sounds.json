@@ -1,0 +1,9 @@
+{
+  "wolf_howl": {
+    "subtitle": "sounds.enders-werewolves.wolf_howl",
+    "category": "ambient",
+    "sounds": [
+      "enders-werewolves:wolf_howl"
+    ]
+  }
+}
