@@ -1,7 +1,6 @@
 package com.enderboy9217.werewolves.mixin;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
@@ -32,10 +31,10 @@ import static com.enderboy9217.werewolves.EndersWerewolves.MOD_ID;
 @Mixin(MinecraftServer.class)
 public class WerewolfMixin {
 	@Unique
-	private boolean alreadyCheckedTonight = false;
+	private boolean wolves$alreadyCheckedTonight = false;
 
 	@Unique
-	private boolean isFullMoon = false;
+	private boolean wolves$isFullMoon = false;
 
 	@Unique
 	private void playHowl(MinecraftServer server, ServerWorld world) {
@@ -55,7 +54,6 @@ public class WerewolfMixin {
 			double x = wolf.getX();
 			double y = wolf.getY();
 			double z = wolf.getZ();
-			LOGGER.info("Playing howl");
 
 			for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
 				// Only play sound for players within 256 blocks
@@ -82,18 +80,18 @@ public class WerewolfMixin {
 		for (ServerWorld world : server.getWorlds()) {
 			if (world.getDimension().hasSkyLight()) {
 				long timeOfDay = world.getTimeOfDay() % 24000;
-				if (!alreadyCheckedTonight && timeOfDay >= 13000) {
-					isFullMoon = (world.getMoonPhase() == 0);
-					if (isFullMoon) {
+				if (!wolves$alreadyCheckedTonight && timeOfDay >= 13000) {
+					wolves$isFullMoon = (world.getMoonPhase() == 0);
+					if (wolves$isFullMoon) {
 						LOGGER.info("Wolves will now be angered by the full moon.");
-						alreadyCheckedTonight = true;
+						this.wolves$alreadyCheckedTonight = true;
 
 						// Play Howl Sound
 						playHowl(server, world);
 					}
-					alreadyCheckedTonight = true;
+					wolves$alreadyCheckedTonight = true;
 				}
-				if (isFullMoon && timeOfDay%20==0) {
+				if (wolves$isFullMoon && timeOfDay%20==0) {
 
 					if (world.getDifficulty() != Difficulty.PEACEFUL) {
 
@@ -123,8 +121,8 @@ public class WerewolfMixin {
 				}
 
 				if (timeOfDay < 13000) {
-					alreadyCheckedTonight = false;
-					isFullMoon = false;
+					this.wolves$alreadyCheckedTonight = false;
+					this.wolves$isFullMoon = false;
 				}
 			}
 		}
